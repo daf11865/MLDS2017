@@ -47,10 +47,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='TensorFlow')
     parser.add_argument('--testpath', dest='testpath',
                         help='testing data path',
-                        default=None, type=str)
+                        default="testing_data.csv", type=str)
     parser.add_argument('--outpath', dest='outpath',
                         help='output pred path',
-                        default=None, type=str)
+                        default="pred.csv", type=str)
     parser.add_argument('--istrain', dest='istrain',
                         help='traing mode or testing mode',
                         default=0, type=int)
