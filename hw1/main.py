@@ -48,16 +48,15 @@ def parse_args():
     parser.add_argument('--testpath', dest='testpath',
                         help='testing data path',
                         default="testing_data.csv", type=str)
+    parser.add_argument('--testans', dest='testans',
+                        help='testing answer path',
+                        default="test_answer.csv", type=str)
     parser.add_argument('--outpath', dest='outpath',
                         help='output pred path',
                         default="pred.csv", type=str)
     parser.add_argument('--istrain', dest='istrain',
                         help='traing mode or testing mode',
                         default=0, type=int)
-
-    '''if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(1)'''
 
     args = parser.parse_args()
     return args
@@ -279,8 +278,19 @@ if __name__ == "__main__":
 
 				preds += ['a','b','c','d','e'][np.argmax(candidata_sc)]
 
-			with open(args.testpath, 'wb') as csvfile:
+			with open(args.outpath, 'wb') as csvfile:
 				writer = csv.writer(csvfile)
 				writer.writerow(['id','answer'])
 				for i in range(len(preds)):
 					writer.writerow([str(i+1),preds[i]])
+
+	if os.path.exists(args.testans):
+		with open(args.testans) as f:
+			test_ans = [l for l in csv.reader(f)]
+		with open(args.outpath) as f:
+			pred_ans = [l for l in csv.reader(f)]
+		acc = 0.0
+		for i in range(len(pred_ans)):
+			if pred_ans[i][1] == test_ans[i][1]:
+				acc += 1.0 / len(pred_ans)
+		print("Accuracy:{}".format(acc))
