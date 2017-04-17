@@ -7,4 +7,4 @@ fi
 
 tar -zxvf datum.tar.gz
 
-python main.py --testpath $1 --outpath $2
+python main.py --testpath $1 --outpath $2 --testans $3
