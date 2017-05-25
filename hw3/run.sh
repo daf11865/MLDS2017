@@ -1,0 +1,17 @@
+#!/bin/bash
+
+rm -r samples
+mkdir samples
+
+if [ ! -f "datum.tar.gz" ]
+then
+wget https://gitlab.com/dfke/MLDS2017_datum/raw/master/hw3/datum.tar.gz
+fi
+
+if [ ! -d "temp" ]
+then
+tar -zxvf datum.tar.gz
+fi
+
+python data_preprocess.py
+python generate.py --testing_text $1
