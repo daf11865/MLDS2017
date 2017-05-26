@@ -10,6 +10,9 @@ import face_data
 import utils
 import time
 import tensorflow.contrib.layers as tfly
+import gc
+import random
+gc.disable()
 
 ACTIVATION = {None:None, 'lrelu':ops.lrelu, 'elu':tf.nn.elu}
 NORMALIZER = {None:None, 'bn':tfly.batch_norm}
@@ -50,14 +53,13 @@ CONFIG = OrderedDict([('use_tagless_data',False),
 											('batch_size',32)])
 
 CONFIG.update([ ('ckpt_dir','temp/ckpt_ConStackLSGANMD_{}/'.format(hash(str(CONFIG)))),
-								('train_step_I',60000),
-								('train_step_II',80000),
+								('train_step_I',51000),
+								('train_step_II',99000),
 								('display_step',100),
 								('save_step',1000),
 								('ADDITIONAL INFO','')])
 
-NOISE = np.random.normal(0,1,[CONFIG['batch_size'],CONFIG['z_dim']])
-STD = 0.432
+STD = 0.350
 
 def make_ckpt_and_record(dir, info):
 	if not os.path.exists(dir):
@@ -471,13 +473,13 @@ class gan:
 					gen_testmd = []
 					for k in range(8):
 						val_t_h, val_t_e, val_noise = self.data.get_val_data2(k)
-						[g_out_] = sess.run([self.stageI['g_out']], feed_dict={self.placeholder['z']:val_noise,
+						[g_out_] = sess.run([self.stageII['g_out']], feed_dict={self.placeholder['z']:val_noise,
 																																	self.placeholder['t_h']:val_t_h,
 																																	self.placeholder['t_e']:val_t_e,
 																																	self.placeholder['is_train']:False})
-						[judge] = sess.run([self.stageI['judge']], feed_dict={self.placeholder['t_h']:val_t_h,
+						[judge] = sess.run([self.stageII['judge']], feed_dict={self.placeholder['t_h']:val_t_h,
 																																	self.placeholder['t_e']:val_t_e,
-																																	self.placeholder['x_real64x64']:g_out_,
+																																	self.placeholder['x_real96x96']:g_out_,
 																																	self.placeholder['is_train']:False})
 						min_idx = np.reshape(judge,[-1]).argsort()[:8]
 						gen_testmd.append(g_out_[min_idx].copy()+self.data.im_mean)
@@ -560,30 +562,32 @@ class gan:
 		with tf.Session() as sess:
 			saver = tf.train.Saver(max_to_keep=3)
 			ckpt = tf.train.get_checkpoint_state(CONFIG['ckpt_dir'])
-			if ckpt and ckpt.model_checkpoint_path:
-				print "restore {} ...".format(ckpt.model_checkpoint_path)
-				saver.restore(sess, ckpt.model_checkpoint_path)
-			else:
-				sys.exit(1)
+			for n in range(len(ckpt.all_model_checkpoint_paths)):
+				ckpt_path = ckpt.all_model_checkpoint_paths[n]
+				if ckpt and ckpt_path:
+					print "restore {} ...".format(ckpt_path)
+					iters = ckpt_path.split('-')[-1]
+					saver.restore(sess, ckpt_path)
+				else:
+					sys.exit(1)
 
-			gen_testmd = []
-			for i in range(len(idx)):
-				noise_temp = np.random.normal(0,STD,[CONFIG['batch_size'],CONFIG['z_dim']])
-				t_h_temp = [t_h[i]] * CONFIG['batch_size']
-				t_e_temp = [t_e[i]] * CONFIG['batch_size']
+				for i in range(len(idx)):
+					noise_temp = np.random.normal(0,STD,[CONFIG['batch_size'],CONFIG['z_dim']])
+					t_h_temp = [t_h[i]] * CONFIG['batch_size']
+					t_e_temp = [t_e[i]] * CONFIG['batch_size']
 
-				[g_out_] = sess.run([self.stageII['g_out']], feed_dict={self.placeholder['z']:noise_temp,
-																															self.placeholder['t_h']:t_h_temp,
-																															self.placeholder['t_e']:t_e_temp,
-																															self.placeholder['is_train']:False})
-				[judge] = sess.run([self.stageII['judge']], feed_dict={self.placeholder['t_h']:t_h_temp,
-																															self.placeholder['t_e']:t_e_temp,
-																															self.placeholder['x_real96x96']:g_out_,
-																															self.placeholder['is_train']:False})
-				min_idx = np.reshape(judge,[-1]).argsort()
-				image_sort = g_out_[min_idx].copy()+self.data.im_mean
-				utils.save_image(image_sort, idx[i], os.path.join(CONFIG['ckpt_dir'],'gen_II'))
+					[g_out_] = sess.run([self.stageII['g_out']], feed_dict={self.placeholder['z']:noise_temp,
+																																self.placeholder['t_h']:t_h_temp,
+																																self.placeholder['t_e']:t_e_temp,
+																																self.placeholder['is_train']:False})
+					[judge] = sess.run([self.stageII['judge']], feed_dict={self.placeholder['t_h']:t_h_temp,
+																																self.placeholder['t_e']:t_e_temp,
+																																self.placeholder['x_real96x96']:g_out_,
+																																self.placeholder['is_train']:False})
+					min_idx = np.reshape(judge,[-1]).argsort()
+					image_sort = g_out_[min_idx].copy()+self.data.im_mean
+					utils.save_image(image_sort, idx[i], os.path.join(CONFIG['ckpt_dir'],'gen_II_{}_{}'.format(STD, iters)))
 
-				out_samples = image_sort[8:13]
-				for k in range(len(out_samples)):					
-					scipy.misc.imsave('samples/sample_{}_{}.jpg'.format(idx[i], k),out_samples[k])
+					out_sample = random.sample(image_sort, 1)[0]
+					out_sample = scipy.misc.imresize(out_sample,(64,64))
+					scipy.misc.imsave('samples/sample_{}_{}.jpg'.format(idx[i], n),out_sample)
