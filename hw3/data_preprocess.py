@@ -23,7 +23,7 @@ if not os.path.exists('temp/ims.npy'):
 		im = skimage.io.imread(path)
 		idx = int(p.replace('.jpg',''))
 		ims[idx] = skimage.img_as_ubyte(im)
-		if i % 100 == 0:
+		if i % 1000 == 0:
 			print('{} saved'.format(i))
 	np.save('temp/ims',ims)
 
@@ -34,7 +34,7 @@ if not os.path.exists('temp/ims64x64.npy'):
 		resized_im = skimage.transform.resize(skimage.io.imread(path),(64,64))
 		idx = int(p.replace('.jpg',''))
 		resized_ims[idx] = skimage.img_as_ubyte(resized_im)
-		if i % 100 == 0:
+		if i % 1000 == 0:
 			print('{} saved'.format(i))
 	np.save('temp/ims64x64',resized_ims)
 
@@ -45,7 +45,7 @@ if not os.path.exists('temp/ims48x48.npy'):
 		resized_im = skimage.transform.resize(skimage.io.imread(path),(48,48))
 		idx = int(p.replace('.jpg',''))
 		resized_ims[idx] = skimage.img_as_ubyte(resized_im)
-		if i % 100 == 0:
+		if i % 1000 == 0:
 			print('{} saved'.format(i))
 	np.save('temp/ims48x48',resized_ims)
 
